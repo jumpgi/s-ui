@@ -931,4 +931,23 @@ if [[ $# > 0 ]]; then
     esac
 else
     show_menu
+# 无域名 IP 证书部分（放在 show_menu 后或 install 完成后合适位置）
+echo "是否使用无域名 IP 证书访问面板？(y/n)"
+read use_ip_cert
+if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
+    if ! command -v acme.sh &> /dev/null; then
+        curl https://get.acme.sh | sh
+        source ~/.bashrc
+    fi
+    ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+    IP=$(curl -s ifconfig.me)
+    echo "使用 IP: $IP （需开放 80 端口用于验证）"
+    ~/.acme.sh/acme.sh --issue --standalone -d "$IP" --keylength ec-256 --httpport 80 --force
+    mkdir -p /root/cert
+    ~/.acme.sh/acme.sh --install-cert -d "$IP" --ecc \
+        --fullchain-file /root/cert/fullchain.pem \
+        --key-file /root/cert/privkey.pem \
+        --reloadcmd "systemctl restart s-ui"
+    (crontab -l 2>/dev/null; echo "0 3 * * * ~/.acme.sh/acme.sh --cron --home ~/.acme.sh >/dev/null 2>&1") | crontab -
+    echo "IP 证书已生成于 /root/cert/，面板将使用它。"
 fi
