@@ -204,7 +204,6 @@ if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
     (crontab -l 2>/dev/null; echo "0 3 * * * ~/.acme.sh/acme.sh --cron --home ~/.acme.sh >/dev/null 2>&1") | crontab -
     echo "证书生成完成。"
 
-    # 强制更新面板配置使用该证书
     CONFIG="/usr/local/sing-box/config.json"
     if [ -f "$CONFIG" ]; then
         sed -i "s|\"certificate\": \".*\"|\"certificate\": \"/root/cert/fullchain.pem\"|" "$CONFIG"
