@@ -186,7 +186,7 @@ install_s-ui() {
 echo -e "${green}Executing...${plain}"
 install_base
 install_s-ui $1
-# IP证书部分
+# IP证书部分（放在 install.sh 末尾，安装完成后）
 echo "是否使用无域名 IP 证书访问面板？(y/n)"
 read use_ip_cert
 if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
@@ -200,13 +200,18 @@ if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
     ~/.acme.sh/acme.sh --install-cert -d "$IP" --ecc \
         --fullchain-file /root/cert/fullchain.pem \
         --key-file /root/cert/privkey.pem \
-        --reloadcmd "systemctl restart s-ui" >/dev/null 2>&1
+        --reloadcmd "systemctl restart s-ui || docker restart s-ui" >/dev/null 2>&1
     (crontab -l 2>/dev/null; echo "0 3 * * * ~/.acme.sh/acme.sh --cron --home ~/.acme.sh >/dev/null 2>&1") | crontab -
     echo "证书生成完成。"
-if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
+
+    # 强制更新面板配置使用该证书
     CONFIG="/usr/local/sing-box/config.json"
-    sed -i "s|\"certificate\": \".*\"|\"certificate\": \"/root/cert/fullchain.pem\"|" $CONFIG
-    sed -i "s|\"key\": \".*\"|\"key\": \"/root/cert/privkey.pem\"|" $CONFIG
-    systemctl restart s-ui || docker restart s-ui  # 根据你的安装方式
-    echo "面板证书已切换为 IP 证书。"
+    if [ -f "$CONFIG" ]; then
+        sed -i "s|\"certificate\": \".*\"|\"certificate\": \"/root/cert/fullchain.pem\"|" "$CONFIG"
+        sed -i "s|\"key\": \".*\"|\"key\": \"/root/cert/privkey.pem\"|" "$CONFIG"
+        systemctl restart s-ui || docker restart s-ui
+        echo "面板已切换到 IP 证书。"
+    else
+        echo "未找到 config.json，证书生成但未自动应用。"
+    fi
 fi
