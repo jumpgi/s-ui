@@ -186,15 +186,14 @@ install_s-ui() {
 echo -e "${green}Executing...${plain}"
 install_base
 install_s-ui $1
-# IP证书部分（放在 install.sh 末尾，安装完成后）
 echo "是否使用无域名 IP 证书访问面板？(y/n)"
 read use_ip_cert
 if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
-    curl https://get.acme.sh | sh >/dev/null 2>&1
-    source ~/.bashrc
+    curl https://get.acme.sh | sh >/dev/null 2>&1 || true
+    source ~/.bashrc || true
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt >/dev/null 2>&1
     IP=$(curl -s ifconfig.me)
-    echo "使用 IP: $IP （需开放80端口）"
+    echo "使用 IP: $IP (需开放80端口)"
     ~/.acme.sh/acme.sh --issue --standalone -d "$IP" --keylength ec-256 --httpport 80 --force >/dev/null 2>&1
     mkdir -p /root/cert
     ~/.acme.sh/acme.sh --install-cert -d "$IP" --ecc \
@@ -202,15 +201,15 @@ if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
         --key-file /root/cert/privkey.pem \
         --reloadcmd "systemctl restart s-ui || docker restart s-ui" >/dev/null 2>&1
     (crontab -l 2>/dev/null; echo "0 3 * * * ~/.acme.sh/acme.sh --cron --home ~/.acme.sh >/dev/null 2>&1") | crontab -
-    echo "证书生成完成。"
+    echo "证书生成完成"
 
     CONFIG="/usr/local/sing-box/config.json"
     if [ -f "$CONFIG" ]; then
-        sed -i "s|\"certificate\": \".*\"|\"certificate\": \"/root/cert/fullchain.pem\"|" "$CONFIG"
-        sed -i "s|\"key\": \".*\"|\"key\": \"/root/cert/privkey.pem\"|" "$CONFIG"
-        systemctl restart s-ui || docker restart s-ui
-        echo "面板已切换到 IP 证书。"
+        sed -i 's|"certificate": ".*"|"certificate": "/root/cert/fullchain.pem"|' "$CONFIG"
+        sed -i 's|"key": ".*"|"key": "/root/cert/privkey.pem"|' "$CONFIG"
+        systemctl restart s-ui || docker restart s-ui || true
+        echo "面板证书已更新"
     else
-        echo "未找到 config.json，证书生成但未自动应用。"
+        echo "未找到 config.json"
     fi
 fi
