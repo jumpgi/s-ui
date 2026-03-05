@@ -203,13 +203,13 @@ if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
     (crontab -l 2>/dev/null; echo "0 3 * * * ~/.acme.sh/acme.sh --cron --home ~/.acme.sh >/dev/null 2>&1") | crontab -
     echo "证书生成完成"
 
-    CONFIG="/usr/local/s-ui/bin/config.json"
+        CONFIG="/usr/local/s-ui/bin/config.json"
     if [ -f "$CONFIG" ]; then
         sed -i 's|"certificate": ".*"|"certificate": "/root/cert/fullchain.pem"|' "$CONFIG"
         sed -i 's|"key": ".*"|"key": "/root/cert/privkey.pem"|' "$CONFIG"
         systemctl restart s-ui || docker restart s-ui || true
         echo "面板证书已更新"
     else
-        echo "未找到 config.json"
+        echo "未找到 config.json (路径: $CONFIG)"
     fi
 fi
