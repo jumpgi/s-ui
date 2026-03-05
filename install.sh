@@ -203,4 +203,8 @@ if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
         --reloadcmd "systemctl restart s-ui" >/dev/null 2>&1
     (crontab -l 2>/dev/null; echo "0 3 * * * ~/.acme.sh/acme.sh --cron --home ~/.acme.sh >/dev/null 2>&1") | crontab -
     echo "证书生成完成。"
+if [ "$use_ip_cert" = "y" ] || [ "$use_ip_cert" = "Y" ]; then
+    sed -i 's|"cert": ".*"|"cert": "/root/cert/fullchain.pem"|' /usr/local/sing-box/config.json
+    sed -i 's|"key": ".*"|"key": "/root/cert/privkey.pem"|' /usr/local/sing-box/config.json
+    systemctl restart s-ui
 fi
